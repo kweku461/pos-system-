@@ -1,0 +1,84 @@
+/* Reset everything */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Make full page white */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  background: #ffffff; /* 🔥 full white */
+}
+
+/* Center everything */
+.login-container {
+  height: 100%;
+  display: flex;
+  align-items: center;   /* 🔥 pushes content up */
+  justify-content: center;
+  padding-top: 5px;         /* 🔥 controls how far from top */
+}
+/* Remove card look */
+.login-card {
+  width: 400px;
+  text-align: center;
+}
+
+/* Logo */
+.brand-logo {
+  width: 210px;
+  margin-bottom: 10px;
+}
+
+/* Inputs */
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #000;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px;
+  background: #ffffff;        /* 🔥 white inside */
+  border: 1.5px solid #000;   /* 🔥 black border */
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  color: #000;    
+}
+
+/* Button */
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: #222;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background: #000;
+}
+
+.login-error {
+  background: #fff0f0;
+  border: 1px solid #f5c0c0;
+  color: #eb5757;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  width: 100%;
+}
