@@ -8,11 +8,25 @@ const authenticateToken = require("./middleware/authMiddleware");
 const authorizeRole = require("./middleware/roleMiddleware");
 
 /* ---------------- MIDDLEWARE ---------------- */
-// CORS must be first, only once, before everything else
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://pos-system-pos-frontend.onrender.com",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean); // removes undefined if FRONTEND_URL not set
+
+    // Allow requests with no origin (Postman, mobile apps, curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 
 app.use(express.json());

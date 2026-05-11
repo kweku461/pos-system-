@@ -1,0 +1,2 @@
+/*
+  Content-Security-Policy: script-src 'self' https://js.paystack.co https://checkout.paystack.com https://checkout.gointerpay.net https://checkout.rch.io https://www.googletagmanager.com https://s3-eu-west-1.amazonaws.com https://applepay.cdn-apple.com blob: 'unsafe-inline' 'unsafe-eval'; frame-src 'self' https://checkout.paystack.com https://js.paystack.co; connect-src 'self' https://api.paystack.co https://checkout.paystack.com https://pos-system-pos-backend.onrender.com;
