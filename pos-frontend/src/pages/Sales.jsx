@@ -222,44 +222,49 @@ function Sales() {
     resetSaleState();
   };
 
-  // ── Open Paystack popup using window.PaystackPop (from index.html script tag) ──
-  // ✅ Uses global window.PaystackPop — no CSP issues
-  const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
-    return new Promise((resolve, reject) => {
-      if (!window.PaystackPop) {
-        reject(new Error("Paystack is not loaded. Please refresh the page."));
-        return;
-      }
+  const waitForPaystack = () =>
+  new Promise((resolve, reject) => {
+    if (window.PaystackPop) return resolve();
+    let tries = 0;
+    const interval = setInterval(() => {
+      if (window.PaystackPop) { clearInterval(interval); resolve(); }
+      else if (++tries > 20) { clearInterval(interval); reject(new Error("Paystack failed to load.")); }
+    }, 250);
+  });
 
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: email || "customer@swiftpos.com",
-        amount: Math.round(amountCedis * 100), // cedis → pesewas
-        currency: "GHS",
-        ref: `swiftpos_${saleId}_${Date.now()}`,
-        channels: channel === "momo" ? ["mobile_money"] : ["card"],
-        metadata: { sale_id: saleId },
+const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await waitForPaystack();
+    } catch (e) {
+      return reject(e);
+    }
 
-        callback: async (response) => {
-          try {
-            const verifyRes = await API.post("/payments/verify-paystack", {
-              reference: response.reference,
-              sale_id: saleId,
-            });
-            resolve(verifyRes.data.reference);
-          } catch (err) {
-            reject(new Error(err.response?.data?.message || "Payment verification failed"));
-          }
-        },
-
-        onClose: () => {
-          reject(new Error("Payment was cancelled."));
-        },
-      });
-
-      handler.openIframe();
+    const handler = window.PaystackPop.setup({
+      key: PAYSTACK_PUBLIC_KEY,
+      email: email || "customer@swiftpos.com",
+      amount: Math.round(amountCedis * 100),
+      currency: "GHS",
+      ref: `swiftpos_${saleId}_${Date.now()}`,
+      channels: channel === "momo" ? ["mobile_money"] : ["card"],
+      metadata: { sale_id: saleId },
+      callback: async (response) => {
+        try {
+          const verifyRes = await API.post("/payments/verify-paystack", {
+            reference: response.reference,
+            sale_id: saleId,
+          });
+          resolve(verifyRes.data.reference);
+        } catch (err) {
+          reject(new Error(err.response?.data?.message || "Payment verification failed"));
+        }
+      },
+      onClose: () => reject(new Error("Payment was cancelled.")),
     });
-  };
+
+    handler.openIframe();
+  });
+};
 
   // ── Main payment handler ────────────────────────────────────────────────────
   const handlePayment = async () => {
