@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import API from "../api/axios";
-import PaystackPop from "@paystack/inline-js";
+
 
 const TAX_RATE = 0.15;
 
@@ -223,43 +223,7 @@ function Sales() {
     resetSaleState();
   };
 
-  // ── Open Paystack popup using @paystack/inline-js ───────────────────────────
-  // ✅ Uses the official package — no CSP issues, no script tag needed
-  const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
-    return new Promise((resolve, reject) => {
-
-      const popup = new PaystackPop();
-
-      popup.newTransaction({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: email || "customer@swiftpos.com",
-        amount: Math.round(amountCedis * 100), // cedis → pesewas
-        currency: "GHS",
-        ref: `swiftpos_${saleId}_${Date.now()}`,
-        channels: channel === "momo" ? ["mobile_money"] : ["card"],
-        metadata: { sale_id: saleId },
-
-        // ✅ onSuccess replaces the old "callback" key
-        onSuccess: async (transaction) => {
-          try {
-            const verifyRes = await API.post("/payments/verify-paystack", {
-              reference: transaction.reference,
-              sale_id: saleId,
-            });
-            resolve(verifyRes.data.reference);
-          } catch (err) {
-            reject(new Error(err.response?.data?.message || "Payment verification failed"));
-          }
-        },
-
-        onCancel: () => {
-          reject(new Error("Payment was cancelled."));
-        },
-      });
-
-    });
-  };
-
+  
   // ── Main payment handler ────────────────────────────────────────────────────
   const handlePayment = async () => {
     if (!validatePayment()) return;
