@@ -66,12 +66,29 @@ npm install
 
 ### 2. Create the database
 
+**Option A — Docker (no PostgreSQL install needed):**
+
+```bash
+docker run -d --name swiftpos-postgres --restart unless-stopped ^
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=your_password ^
+  -e POSTGRES_DB=pos_system -p 5432:5432 ^
+  -v swiftpos_pgdata:/var/lib/postgresql/data postgres:16-alpine
+
+# Create all tables (from the pos-backend folder)
+type db\schema.sql | docker exec -i swiftpos-postgres psql -U postgres -d pos_system
+```
+
+The container auto-starts whenever Docker Desktop is running. To run SQL later:
+`docker exec -it swiftpos-postgres psql -U postgres -d pos_system`
+
+**Option B — native PostgreSQL install:**
+
 ```bash
 # Create an empty database (enter your postgres password when prompted)
-psql -U postgres -c "CREATE DATABASE swiftpos;"
+psql -U postgres -c "CREATE DATABASE pos_system;"
 
 # Create all tables
-psql -U postgres -d swiftpos -f pos-backend/db/schema.sql
+psql -U postgres -d pos_system -f pos-backend/db/schema.sql
 ```
 
 ### 3. Configure the backend
