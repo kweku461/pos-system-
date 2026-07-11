@@ -1,25 +1,19 @@
 import "../styles/sales.css";
-import logo from "../assets/swiftpos-logo.jpeg";
+import Sidebar from "../components/Sidebar";
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import API from "../api/axios";
+import {
+  FiPlus, FiSearch, FiBox, FiTrash2, FiFileText, FiCheckCircle,
+  FiDollarSign, FiSmartphone, FiCreditCard, FiLayers,
+} from "react-icons/fi";
 
 const TAX_RATE = 0.15;
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 
-const categoryEmojis = {
-  Drinks: "🥤", Foodstuffs: "🍞", Biscuits: "🍪",
-  Beverages: "🧃", Snacks: "🍟", Bakery: "🍞",
-  Dairy: "🥛", Electronics: "💻", Stationery: "📓",
-  Home: "☕",
-};
+const PAYMENT_NAMES = { cash: "Cash", momo: "Mobile Money", card: "Card", split: "Split" };
 
 function Sales() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
   const [availableProducts, setAvailableProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
@@ -163,28 +157,19 @@ function Sales() {
     return true;
   };
 
-  const paymentLabel = () => {
-    if (paymentMethod === "cash") return "Cash";
-    if (paymentMethod === "momo") return "Mobile Money";
-    if (paymentMethod === "card") return "Card";
-    if (paymentMethod === "split") return "Split";
-    return "";
-  };
-
   const buildReceipt = useCallback((saleId) => ({
     id: saleId,
     date: new Date().toLocaleDateString(),
     time: new Date().toLocaleTimeString(),
     items: cart.map((c) => ({
       name: c.product_name,
-      emoji: categoryEmojis[c.category] || "🛒",
       qty: c.qty,
       price: parseFloat(c.price),
     })),
     subtotal, discountType,
     discountValue: parseFloat(discountValue) || 0,
     discountAmount, taxRate: TAX_RATE, taxAmount, grandTotal,
-    payment: paymentLabel(),
+    payment: PAYMENT_NAMES[paymentMethod] || "",
     cashTendered: paymentMethod === "cash" ? parseFloat(cashTendered) : null,
     cashChange: paymentMethod === "cash" ? cashChange : null,
     splitCash: paymentMethod === "split" ? parseFloat(splitCash) || 0 : null,
@@ -232,14 +217,8 @@ function Sales() {
     }, 250);
   });
 
-const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      await waitForPaystack();
-    } catch (e) {
-      return reject(e);
-    }
-
+const openPaystackPopup = ({ saleId, amountCedis, email, channel }) =>
+  waitForPaystack().then(() => new Promise((resolve, reject) => {
     const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: email || "customer@swiftpos.com",
@@ -263,8 +242,7 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
     });
 
     handler.openIframe();
-  });
-};
+  }));
 
   // ── Main payment handler ────────────────────────────────────────────────────
   const handlePayment = async () => {
@@ -386,46 +364,32 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
     setSearch("");
   };
 
-  const handleLogout = () => { logout(); navigate("/"); };
+  const PAYMENT_OPTIONS = [
+    { key: "cash",  label: "Cash",         icon: <FiDollarSign /> },
+    { key: "momo",  label: "Mobile Money", icon: <FiSmartphone /> },
+    { key: "card",  label: "Card",         icon: <FiCreditCard /> },
+    { key: "split", label: "Split",        icon: <FiLayers /> },
+  ];
 
   return (
-    <div className="sales-container">
-
-      {/* Sidebar */}
-      <div className="sidebar">
-        <img src={logo} className="sidebar-logo" alt="SwiftPOS" />
-        <ul className="menu">
-          <li onClick={() => navigate("/dashboard")}><span className="menu-icon">⊞</span> Dashboard</li>
-          <li onClick={() => navigate("/products")}><span className="menu-icon">🛒</span> Products</li>
-          <li onClick={() => navigate("/inventory")}><span className="menu-icon">📦</span> Inventory</li>
-          <li className="active"><span className="menu-icon">📊</span> Sales</li>
-          <li onClick={() => navigate("/customers")}><span className="menu-icon">👥</span> Customers</li>
-          <li onClick={() => navigate("/analytics")}><span className="menu-icon">📈</span> Analytics</li>
-        </ul>
-        <div className="user" onClick={handleLogout} title="Click to logout">
-          <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || "U"}</div>
-          <div className="user-info">
-            <p>{user?.name || "User"}</p>
-            <span>{user?.role || "Role"}</span>
-          </div>
-          <span className="logout-icon">⏻</span>
-        </div>
-      </div>
+    <div className="app-shell">
+      <Sidebar />
 
       {/* Main */}
       <div className="main">
         <div className="topbar">
-          <h2 className="page-title">Sales</h2>
-          <div style={{ display: "flex", gap: "10px" }}>
-            {lastSaleReceipt && (
-              <button className="receipt-btn" onClick={() => setShowReceipt(true)}>
-                🧾 Last Receipt
-              </button>
-            )}
-            <button className="add-sale-btn" onClick={() => setShowSaleModal(true)}>
-              + Add Sale
-            </button>
+          <div style={{ flex: 1 }}>
+            <h2 className="page-title">Sales</h2>
+            <p className="page-sub">{sales.length} transaction{sales.length !== 1 ? "s" : ""} recorded</p>
           </div>
+          {lastSaleReceipt && (
+            <button className="receipt-btn" onClick={() => setShowReceipt(true)}>
+              <FiFileText /> Last Receipt
+            </button>
+          )}
+          <button className="add-sale-btn" onClick={() => setShowSaleModal(true)}>
+            <FiPlus /> New Sale
+          </button>
         </div>
 
         <div className="table-wrap">
@@ -433,11 +397,11 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
             <div className="empty-state"><p className="empty-text">Loading sales...</p></div>
           ) : sales.length === 0 ? (
             <div className="empty-state">
-              <p className="empty-icon">🧾</p>
-              <p className="empty-text">No sales yet. Click <strong>+ Add Sale</strong> to get started.</p>
+              <span className="empty-icon"><FiFileText /></span>
+              <p className="empty-text">No sales yet. Click <strong>New Sale</strong> to get started.</p>
             </div>
           ) : (
-            <table className="sales-table">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>#</th><th>Date</th><th>Total</th><th>Status</th><th>Action</th>
@@ -446,9 +410,9 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
               <tbody>
                 {sales.map((sale, index) => (
                   <tr key={sale.sale_id}>
-                    <td>{index + 1}</td>
+                    <td className="muted">{index + 1}</td>
                     <td>{new Date(sale.created_at).toLocaleString()}</td>
-                    <td className="total-cell">₵{parseFloat(sale.total_amount).toFixed(2)}</td>
+                    <td className="bold">₵{parseFloat(sale.total_amount).toFixed(2)}</td>
                     <td>
                       <span className={`payment-badge ${
                         sale.status === "voided"    ? "badge-voided"    :
@@ -480,21 +444,24 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
             {/* Left — Product Picker */}
             <div className="product-picker">
               <h3>Select Products</h3>
-              <input
-                className="product-search" type="text"
-                placeholder="🔍 Search products..."
-                value={search} onChange={(e) => setSearch(e.target.value)}
-              />
+              <div className="search-wrap">
+                <span className="search-icon"><FiSearch /></span>
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={search} onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
               <div className="product-grid">
                 {filtered.map((p) => (
                   <div className="product-card" key={p.product_id} onClick={() => addToCart(p)}>
-                    <span className="product-card-emoji">{categoryEmojis[p.category] || "🛒"}</span>
+                    <span className="product-card-icon"><FiBox /></span>
                     <span className="product-card-name">{p.product_name}</span>
                     <span className="product-card-price">₵{parseFloat(p.price).toFixed(2)}</span>
                   </div>
                 ))}
                 {filtered.length === 0 && (
-                  <p style={{ color: "#aaa", fontSize: "13px", padding: "10px" }}>No products found.</p>
+                  <p className="picker-empty">No products found.</p>
                 )}
               </div>
             </div>
@@ -520,16 +487,16 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
                 <div className="cart-items">
                   {cart.map((item) => (
                     <div className="cart-item" key={item.product_id}>
-                      <span className="cart-item-name">
-                        {categoryEmojis[item.category] || "🛒"} {item.product_name}
-                      </span>
+                      <span className="cart-item-name">{item.product_name}</span>
                       <div className="cart-item-controls">
                         <button onClick={() => updateQty(item.product_id, item.qty - 1)}>−</button>
                         <span>{item.qty}</span>
                         <button onClick={() => updateQty(item.product_id, item.qty + 1)}>+</button>
                       </div>
                       <span className="cart-item-price">₵{(parseFloat(item.price) * item.qty).toFixed(2)}</span>
-                      <button className="cart-remove" onClick={() => removeFromCart(item.product_id)}>🗑️</button>
+                      <button className="cart-remove" onClick={() => removeFromCart(item.product_id)}>
+                        <FiTrash2 />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -551,7 +518,7 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
               </div>
 
               <div className="tax-row">
-                <label className="tax-label">Apply TAX ({(TAX_RATE * 100).toFixed(0)}%)</label>
+                <label className="tax-label">Apply VAT ({(TAX_RATE * 100).toFixed(0)}%)</label>
                 <button className={`tax-toggle ${applyTax ? "tax-on" : "tax-off"}`} onClick={() => setApplyTax(!applyTax)}>
                   {applyTax ? "On" : "Off"}
                 </button>
@@ -601,7 +568,7 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
             <div className="order-summary">
               {cart.map((item) => (
                 <div className="summary-row" key={item.product_id}>
-                  <span>{categoryEmojis[item.category] || "🛒"} {item.product_name} x{item.qty}</span>
+                  <span>{item.product_name} ×{item.qty}</span>
                   <span>₵{(parseFloat(item.price) * item.qty).toFixed(2)}</span>
                 </div>
               ))}
@@ -632,18 +599,13 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
 
             <p className="payment-label">Select Payment Method</p>
             <div className="payment-options">
-              {[
-                { key: "cash",  label: "💵 Cash" },
-                { key: "momo",  label: "📱 Mobile Money" },
-                { key: "card",  label: "💳 Card" },
-                { key: "split", label: "✂️ Split" },
-              ].map(({ key, label }) => (
+              {PAYMENT_OPTIONS.map(({ key, label, icon }) => (
                 <button
                   key={key}
                   className={`payment-option ${paymentMethod === key ? "selected" : ""}`}
                   onClick={() => { setPaymentMethod(key); setSubmitError(""); }}
                 >
-                  {label}
+                  {icon} {label}
                 </button>
               ))}
             </div>
@@ -677,8 +639,8 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
                   value={momoNumber}
                   onChange={(e) => { setMomoNumber(e.target.value); setSubmitError(""); }}
                 />
-                <p style={{ fontSize: "12px", color: "#888", marginTop: "6px" }}>
-                  📱 A Paystack popup will open to complete the mobile money payment of ₵{grandTotal.toFixed(2)}.
+                <p className="payment-note">
+                  A Paystack popup will open to complete the mobile money payment of ₵{grandTotal.toFixed(2)}.
                 </p>
               </div>
             )}
@@ -686,8 +648,8 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
             {/* Card */}
             {paymentMethod === "card" && (
               <div className="payment-fields">
-                <p style={{ fontSize: "13px", color: "#555", margin: "8px 0" }}>
-                  💳 A secure Paystack popup will open to collect card details.
+                <p className="payment-note">
+                  A secure Paystack popup will open to collect card details.
                 </p>
               </div>
             )}
@@ -715,11 +677,11 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
                 <div className={`split-summary ${splitRemaining > 0 ? "split-short" : "split-ok"}`}>
                   {splitRemaining > 0
                     ? `Still needed: ₵${splitRemaining.toFixed(2)}`
-                    : `✓ Covered — change: ₵${(splitPaid - grandTotal).toFixed(2)}`}
+                    : `Covered — change: ₵${(splitPaid - grandTotal).toFixed(2)}`}
                 </div>
                 {(parseFloat(splitMomo) > 0 || parseFloat(splitCard) > 0) && (
-                  <p style={{ fontSize: "12px", color: "#888", marginTop: "6px" }}>
-                    📱 Paystack popup will open for the electronic portion
+                  <p className="payment-note">
+                    A Paystack popup will open for the electronic portion
                     (₵{((parseFloat(splitMomo) || 0) + (parseFloat(splitCard) || 0)).toFixed(2)}).
                   </p>
                 )}
@@ -755,7 +717,7 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
             <div className="receipt-items">
               {lastSaleReceipt.items.map((item, i) => (
                 <div className="receipt-line" key={i}>
-                  <span>{item.emoji} {item.name} x{item.qty}</span>
+                  <span>{item.name} ×{item.qty}</span>
                   <span>₵{(item.price * item.qty).toFixed(2)}</span>
                 </div>
               ))}
@@ -804,16 +766,15 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
       {/* Void Confirmation */}
       {voidId && (
         <div className="modal-overlay" onClick={() => setVoidId(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "360px" }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "380px" }}>
             <h3>Void Sale</h3>
-            <p style={{ fontSize: "14px", color: "#555" }}>
+            <p className="modal-hint" style={{ marginTop: 0 }}>
               Are you sure you want to void this sale? Inventory will be restored and loyalty points reversed.
             </p>
-            <div className="modal-actions" style={{ marginTop: "12px" }}>
+            <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setVoidId(null)}>Cancel</button>
               <button
-                className="confirm-btn"
-                style={{ background: "#eb5757" }}
+                className="confirm-btn danger"
                 onClick={handleVoid}
                 disabled={voidLoading}
               >
@@ -826,7 +787,7 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) => {
 
       {/* Success Toast */}
       {showSuccess && (
-        <div className="success-toast">✅ Sale completed successfully!</div>
+        <div className="success-toast"><FiCheckCircle /> Sale completed successfully!</div>
       )}
 
     </div>

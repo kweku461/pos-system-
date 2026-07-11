@@ -1,27 +1,14 @@
 import "../styles/products.css";
-import logo from "../assets/swiftpos-logo.jpeg";
-import { useNavigate } from 'react-router-dom';
+import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
 import API from "../api/axios";
+import {
+  FiSearch, FiPlus, FiGrid, FiTag, FiBox, FiTrash2, FiEdit2,
+} from "react-icons/fi";
 
-const initialCategories = [
-  { label: "All", icon: "⊞" },
-  { label: "Drinks", icon: "🍾" },
-  { label: "Foodstuffs", icon: "🥗" },
-  { label: "Biscuits", icon: "🍪" },
-];
-
-const categoryEmojis = {
-  Drinks: "🥤",
-  Foodstuffs: "🍞",
-  Biscuits: "🍪",
-};
+const initialCategories = ["All", "Drinks", "Foodstuffs", "Biscuits"];
 
 function Products() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
   const [categories, setCategories] = useState(initialCategories);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -63,13 +50,10 @@ function Products() {
 
       const backendCats = [...new Set(res.data.map(p => p.category))];
       setCategories((prev) => {
-        const existing = prev.map(c => c.label);
-        const newCats = backendCats
-          .filter(c => c && !existing.includes(c))
-          .map(c => ({ label: c, icon: "🏷️" }));
+        const newCats = backendCats.filter(c => c && !prev.includes(c));
         return [...prev, ...newCats];
       });
-    } catch (err) {
+    } catch {
       setError("Failed to load products. Please try again.");
     } finally {
       setLoading(false);
@@ -104,7 +88,6 @@ function Products() {
       setNewProduct({ name: "", price: "", category: "Drinks", quantity: "" });
       setShowModal(false);
     } catch (err) {
-      // Log full error to browser console for easier debugging
       console.error("Add product error:", err.response?.status, err.response?.data);
       setAddError(
         err.response?.data?.message || err.message || "Failed to add product. Try again."
@@ -160,91 +143,50 @@ function Products() {
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
     const exists = categories.find(
-      (c) => c.label.toLowerCase() === newCategory.toLowerCase()
+      (c) => c.toLowerCase() === newCategory.toLowerCase()
     );
     if (exists) {
       alert("Category already exists!");
       return;
     }
-    setCategories([...categories, { label: newCategory, icon: "🏷️" }]);
+    setCategories([...categories, newCategory]);
     setNewCategory("");
     setShowCategoryModal(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
   return (
-    <div className="products-container">
-
-      {/* Sidebar */}
-      <div className="sidebar">
-        <img src={logo} className="sidebar-logo" alt="SwiftPOS" />
-        <ul className="menu">
-          <li onClick={() => navigate('/dashboard')}>
-            <span className="menu-icon">⊞</span> Dashboard
-          </li>
-          <li className="active">
-            <span className="menu-icon">🛒</span> Products
-          </li>
-          <li onClick={() => navigate('/inventory')}>
-            <span className="menu-icon">📦</span> Inventory
-          </li>
-          <li onClick={() => navigate('/sales')}>
-            <span className="menu-icon">📊</span> Sales
-          </li>
-          <li onClick={() => navigate('/customers')}>
-            <span className="menu-icon">👥</span> Customers
-          </li>
-          <li onClick={() => navigate('/analytics')}>
-            <span className="menu-icon">📈</span> Analytics
-          </li>
-        </ul>
-        <div className="user" onClick={handleLogout} title="Click to logout">
-          <div className="user-avatar">
-            {user?.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-          <div className="user-info">
-            <p>{user?.name || "User"}</p>
-            <span>{user?.role || "Role"}</span>
-          </div>
-          <span className="logout-icon">⏻</span>
-        </div>
-      </div>
+    <div className="app-shell">
+      <Sidebar />
 
       {/* Main */}
       <div className="main">
 
         {/* Top Bar */}
         <div className="topbar">
+          <div>
+            <h2 className="page-title">Products</h2>
+            <p className="page-sub">{products.length} product{products.length !== 1 ? "s" : ""} in catalog</p>
+          </div>
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><FiSearch /></span>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <select className="categories-select">
-            <option>Categories ▾</option>
-            {categories.map((c) => (
-              <option key={c.label}>{c.label}</option>
-            ))}
-          </select>
           <button
             className="add-category-btn"
             onClick={() => setShowCategoryModal(true)}
           >
-            Add Category +
+            <FiPlus /> Category
           </button>
           <button
             className="add-btn"
             onClick={() => setShowModal(true)}
           >
-            Add Product +
+            <FiPlus /> Add Product
           </button>
         </div>
 
@@ -252,12 +194,12 @@ function Products() {
         <div className="category-pills">
           {categories.map((cat) => (
             <button
-              key={cat.label}
-              className={`pill ${activeCategory === cat.label ? "pill-active" : ""}`}
-              onClick={() => setActiveCategory(cat.label)}
+              key={cat}
+              className={`pill ${activeCategory === cat ? "pill-active" : ""}`}
+              onClick={() => setActiveCategory(cat)}
             >
-              <span className="pill-icon">{cat.icon}</span>
-              <span>{cat.label}</span>
+              <span className="pill-icon">{cat === "All" ? <FiGrid /> : <FiTag />}</span>
+              <span>{cat}</span>
             </button>
           ))}
         </div>
@@ -268,28 +210,31 @@ function Products() {
 
         {/* Product List */}
         {!loading && !error && (
-          <div className="product-list">
+          <div className="product-list panel">
             {filtered.map((product) => (
               <div className="product-item" key={product.product_id}>
-                <span className="product-emoji">
-                  {categoryEmojis[product.category] || "🛒"}
-                </span>
-                <span className="product-name">{product.product_name}</span>
+                <span className="product-thumb"><FiBox /></span>
+                <div className="product-info">
+                  <span className="product-name">{product.product_name}</span>
+                  <span className="product-category">{product.category || "Uncategorized"}</span>
+                </div>
                 <span className="product-price">
                   ₵{parseFloat(product.price).toFixed(2)}
                 </span>
                 <div className="product-actions">
                   <button
-                    className="edit-product-btn"
+                    className="row-action-btn"
                     onClick={() => setEditProduct({ ...product })}
+                    title="Edit product"
                   >
-                    Edit
+                    <FiEdit2 />
                   </button>
                   <button
-                    className="delete-product-btn"
+                    className="row-action-btn danger"
                     onClick={() => { setDeleteId(product.product_id); setDeleteError(""); }}
+                    title="Delete product"
                   >
-                    🗑️
+                    <FiTrash2 />
                   </button>
                 </div>
               </div>
@@ -351,8 +296,8 @@ function Products() {
                   setNewProduct({ ...newProduct, category: e.target.value })
                 }
               >
-                {categories.filter(c => c.label !== "All").map((c) => (
-                  <option key={c.label}>{c.label}</option>
+                {categories.filter(c => c !== "All").map((c) => (
+                  <option key={c}>{c}</option>
                 ))}
               </select>
             </div>
@@ -409,21 +354,16 @@ function Products() {
         <div className="modal-overlay" onClick={() => setDeleteId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete Product</h3>
-            <p style={{ fontSize: "14px", color: "#555" }}>
+            <p className="modal-hint" style={{ marginTop: 0 }}>
               Are you sure you want to delete this product? This cannot be undone.
             </p>
-            {deleteError && (
-              <p className="modal-error" style={{ marginTop: "8px" }}>
-                {deleteError}
-              </p>
-            )}
-            <div className="modal-actions" style={{ marginTop: "8px" }}>
+            {deleteError && <p className="modal-error">{deleteError}</p>}
+            <div className="modal-actions">
               <button className="cancel-btn" onClick={() => { setDeleteId(null); setDeleteError(""); }}>
                 Cancel
               </button>
               <button
-                className="confirm-btn"
-                style={{ background: "#eb5757" }}
+                className="confirm-btn danger"
                 onClick={() => handleDelete(deleteId)}
               >
                 Delete
@@ -482,8 +422,8 @@ function Products() {
                   setEditProduct({ ...editProduct, category: e.target.value })
                 }
               >
-                {categories.filter(c => c.label !== "All").map((c) => (
-                  <option key={c.label}>{c.label}</option>
+                {categories.filter(c => c !== "All").map((c) => (
+                  <option key={c}>{c}</option>
                 ))}
               </select>
             </div>

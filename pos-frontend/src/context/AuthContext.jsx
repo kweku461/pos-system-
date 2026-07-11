@@ -2,12 +2,34 @@ import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
+// Returns true if the JWT is missing, malformed, or past its expiry
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return !payload.exp || payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
+function clearStoredSession() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("name");
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("token");
     const role  = localStorage.getItem("role");
     const name  = localStorage.getItem("name");
-    return token ? { token, role, name } : null;
+
+    // Don't restore a session whose token has already expired
+    if (!token || isTokenExpired(token)) {
+      clearStoredSession();
+      return null;
+    }
+    return { token, role, name };
   });
 
   const login = (token, role, name) => {
@@ -18,9 +40,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("name");
+    clearStoredSession();
     setUser(null);
   };
 
@@ -31,6 +51,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   return useContext(AuthContext);
 }

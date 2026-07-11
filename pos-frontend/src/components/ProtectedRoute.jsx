@@ -8,7 +8,7 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.map(r => r.toLowerCase()).includes(user.role.toLowerCase())) {
+  if (allowedRoles && !allowedRoles.map(r => r.toLowerCase()).includes(user.role?.toLowerCase())) {
     return <Navigate to="/unauthorized" replace />;
   }
 

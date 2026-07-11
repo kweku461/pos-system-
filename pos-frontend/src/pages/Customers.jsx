@@ -1,14 +1,10 @@
 import "../styles/customers.css";
-import logo from "../assets/swiftpos-logo.jpeg";
+import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import API from "../api/axios";
+import { FiSearch, FiPlus, FiStar, FiEdit2, FiTrash2 } from "react-icons/fi";
 
 function Customers() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -47,7 +43,7 @@ function Customers() {
     try {
       const res = await API.get("/customers");
       setCustomers(res.data);
-    } catch (err) {
+    } catch {
       setError("Failed to load customers. Please try again.");
     } finally {
       setLoading(false);
@@ -113,7 +109,7 @@ function Customers() {
       await API.delete(`/customers/${id}`);
       setCustomers(customers.filter((c) => c.customer_id !== id));
       setDeleteId(null);
-    } catch (err) {
+    } catch {
       alert("Failed to delete customer.");
     }
   };
@@ -143,65 +139,30 @@ function Customers() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
   return (
-    <div className="customers-container">
-
-      {/* Sidebar */}
-      <div className="sidebar">
-        <img src={logo} className="sidebar-logo" alt="SwiftPOS" />
-        <ul className="menu">
-          <li onClick={() => navigate("/dashboard")}>
-            <span className="menu-icon">⊞</span> Dashboard
-          </li>
-          <li onClick={() => navigate("/products")}>
-            <span className="menu-icon">🛒</span> Products
-          </li>
-          <li onClick={() => navigate("/inventory")}>
-            <span className="menu-icon">📦</span> Inventory
-          </li>
-          <li onClick={() => navigate("/sales")}>
-            <span className="menu-icon">📊</span> Sales
-          </li>
-          <li className="active">
-            <span className="menu-icon">👥</span> Customers
-          </li>
-          <li onClick={() => navigate("/analytics")}>
-            <span className="menu-icon">📈</span> Analytics
-          </li>
-        </ul>
-        <div className="user" onClick={handleLogout} title="Click to logout">
-          <div className="user-avatar">
-            {user?.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-          <div className="user-info">
-            <p>{user?.name || "User"}</p>
-            <span>{user?.role || "Role"}</span>
-          </div>
-          <span className="logout-icon">⏻</span>
-        </div>
-      </div>
+    <div className="app-shell">
+      <Sidebar />
 
       {/* Main */}
       <div className="main">
 
         {/* Top Bar */}
         <div className="topbar">
+          <div>
+            <h2 className="page-title">Customers</h2>
+            <p className="page-sub">{customers.length} registered customer{customers.length !== 1 ? "s" : ""}</p>
+          </div>
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><FiSearch /></span>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search by name, phone or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <button className="add-btn" onClick={() => setShowModal(true)}>
-            Add Customer +
+            <FiPlus /> Add Customer
           </button>
         </div>
 
@@ -212,7 +173,7 @@ function Customers() {
         {/* Table */}
         {!loading && !error && (
           <div className="table-wrap">
-            <table className="customers-table">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -225,18 +186,18 @@ function Customers() {
               <tbody>
                 {filtered.map((customer) => (
                   <tr key={customer.customer_id}>
-                    <td>{customer.name}</td>
+                    <td className="bold">{customer.name}</td>
                     <td>{customer.phone}</td>
                     <td>{customer.email}</td>
                     <td>
                       <span className="points-badge">
-                        ⭐ {customer.loyalty_points || 0}
+                        <FiStar /> {customer.loyalty_points || 0}
                       </span>
                     </td>
                     <td>
                       <div className="action-btns-row">
                         <button
-                          className="points-btn"
+                          className="row-action-btn points"
                           onClick={() => {
                             setLoyaltyCustomer(customer);
                             setLoyaltyPoints("");
@@ -245,21 +206,21 @@ function Customers() {
                           }}
                           title="Manage loyalty points"
                         >
-                          ⭐
+                          <FiStar />
                         </button>
                         <button
-                          className="edit-btn"
+                          className="row-action-btn"
                           onClick={() => setEditCustomer({ ...customer })}
                           title="Edit customer"
                         >
-                          Edit
+                          <FiEdit2 />
                         </button>
                         <button
-                          className="delete-btn"
+                          className="row-action-btn danger"
                           onClick={() => setDeleteId(customer.customer_id)}
                           title="Delete customer"
                         >
-                          Delete
+                          <FiTrash2 />
                         </button>
                       </div>
                     </td>
@@ -400,7 +361,7 @@ function Customers() {
         <div className="modal-overlay" onClick={() => setLoyaltyCustomer(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Manage Loyalty Points</h3>
-            <p style={{ fontSize: "13px", color: "#888", marginTop: "-8px" }}>
+            <p className="modal-hint">
               {loyaltyCustomer.name} — Current points:{" "}
               <strong>{loyaltyCustomer.loyalty_points || 0}</strong>
             </p>
@@ -467,16 +428,15 @@ function Customers() {
         <div className="modal-overlay" onClick={() => setDeleteId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete Customer</h3>
-            <p style={{ fontSize: "14px", color: "#555" }}>
+            <p className="modal-hint" style={{ marginTop: 0 }}>
               Are you sure you want to delete this customer? This cannot be undone.
             </p>
-            <div className="modal-actions" style={{ marginTop: "8px" }}>
+            <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setDeleteId(null)}>
                 Cancel
               </button>
               <button
-                className="confirm-btn"
-                style={{ background: "#eb5757" }}
+                className="confirm-btn danger"
                 onClick={() => handleDelete(deleteId)}
               >
                 Delete

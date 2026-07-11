@@ -1,14 +1,12 @@
 import "../styles/inventory.css";
-import logo from "../assets/swiftpos-logo.jpeg";
+import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import API from "../api/axios";
+import {
+  FiSearch, FiPlus, FiEdit2, FiChevronUp, FiChevronDown,
+} from "react-icons/fi";
 
 function Inventory() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,7 +42,7 @@ function Inventory() {
         status: item.quantity <= 15 ? "Low Stock" : "In Stock",
       }));
       setInventory(withStatus);
-    } catch (err) {
+    } catch {
       setError("Failed to load inventory. Please try again.");
     } finally {
       setLoading(false);
@@ -80,7 +78,7 @@ function Inventory() {
     }
   };
 
-  // Update Stock — sets quantity to exact value via new endpoint
+  // Update Stock — sets quantity to exact value
   const handleUpdateStock = async () => {
     setUpdateError("");
     if (!updateProductId) {
@@ -111,11 +109,6 @@ function Inventory() {
 
   const toggleSort = () => setSortAsc(!sortAsc);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
   const filtered = inventory
     .filter((item) => {
       const matchSearch = item.product_name
@@ -134,54 +127,29 @@ function Inventory() {
         : b.product_name.localeCompare(a.product_name)
     );
 
-  return (
-    <div className="inventory-container">
+  const lowCount = inventory.filter((i) => i.status === "Low Stock").length;
 
-      {/* Sidebar */}
-      <div className="sidebar">
-        <img src={logo} className="sidebar-logo" alt="SwiftPOS" />
-        <ul className="menu">
-          <li onClick={() => navigate("/dashboard")}>
-            <span className="menu-icon">⊞</span> Dashboard
-          </li>
-          <li onClick={() => navigate("/products")}>
-            <span className="menu-icon">🛒</span> Products
-          </li>
-          <li className="active">
-            <span className="menu-icon">📦</span> Inventory
-          </li>
-          <li onClick={() => navigate("/sales")}>
-            <span className="menu-icon">📊</span> Sales
-          </li>
-          <li onClick={() => navigate("/customers")}>
-            <span className="menu-icon">👥</span> Customers
-          </li>
-          <li onClick={() => navigate("/analytics")}>
-            <span className="menu-icon">📈</span> Analytics
-          </li>
-        </ul>
-        <div className="user" onClick={handleLogout} title="Click to logout">
-          <div className="user-avatar">
-            {user?.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-          <div className="user-info">
-            <p>{user?.name || "User"}</p>
-            <span>{user?.role || "Role"}</span>
-          </div>
-          <span className="logout-icon">⏻</span>
-        </div>
-      </div>
+  return (
+    <div className="app-shell">
+      <Sidebar />
 
       {/* Main */}
       <div className="main">
 
         {/* Top Bar */}
         <div className="topbar">
+          <div>
+            <h2 className="page-title">Inventory</h2>
+            <p className="page-sub">
+              {inventory.length} item{inventory.length !== 1 ? "s" : ""}
+              {lowCount > 0 && ` · ${lowCount} low on stock`}
+            </p>
+          </div>
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><FiSearch /></span>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search inventory..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -191,7 +159,7 @@ function Inventory() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="">Filter</option>
+            <option value="">All statuses</option>
             <option value="Low Stock">Low Stock</option>
             <option value="In Stock">In Stock</option>
             {[...new Set(
@@ -200,10 +168,17 @@ function Inventory() {
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="action-btns">
+          <button
+            className="add-category-btn"
+            onClick={() => {
+              setUpdateProductId("");
+              setUpdateQty("");
+              setUpdateError("");
+              setShowUpdateModal(true);
+            }}
+          >
+            <FiEdit2 /> Update Stock
+          </button>
           <button
             className="restock-btn"
             onClick={() => {
@@ -213,18 +188,7 @@ function Inventory() {
               setShowRestockModal(true);
             }}
           >
-            Restock
-          </button>
-          <button
-            className="update-btn"
-            onClick={() => {
-              setUpdateProductId("");
-              setUpdateQty("");
-              setUpdateError("");
-              setShowUpdateModal(true);
-            }}
-          >
-            Update Stock
+            <FiPlus /> Restock
           </button>
         </div>
 
@@ -235,10 +199,7 @@ function Inventory() {
         {/* Table */}
         {!loading && !error && (
           <div className="table-wrap">
-            <table
-              className="inventory-table"
-              style={{ tableLayout: "fixed", width: "100%" }}
-            >
+            <table className="data-table" style={{ tableLayout: "fixed", width: "100%" }}>
               <thead>
                 <tr>
                   <th
@@ -246,7 +207,9 @@ function Inventory() {
                     onClick={toggleSort}
                     className="sortable"
                   >
-                    Product Name {sortAsc ? "▲" : "▼"}
+                    <span className="th-sort">
+                      Product Name {sortAsc ? <FiChevronUp /> : <FiChevronDown />}
+                    </span>
                   </th>
                   <th style={{ width: "20%" }}>Category</th>
                   <th style={{ width: "15%" }}>Stock</th>
@@ -268,9 +231,7 @@ function Inventory() {
                     <td>
                       <span
                         className={`status-badge ${
-                          item.status === "Low Stock"
-                            ? "badge-red"
-                            : "badge-green"
+                          item.status === "Low Stock" ? "badge-red" : "badge-green"
                         }`}
                       >
                         {item.status}
@@ -299,7 +260,7 @@ function Inventory() {
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Restock Product</h3>
-            <p style={{ fontSize: "13px", color: "#888", marginTop: "-8px" }}>
+            <p className="modal-hint">
               This will add to the existing stock quantity.
             </p>
 
@@ -364,7 +325,7 @@ function Inventory() {
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Update Stock</h3>
-            <p style={{ fontSize: "13px", color: "#888", marginTop: "-8px" }}>
+            <p className="modal-hint">
               This will set the stock to the exact quantity you enter.
             </p>
 

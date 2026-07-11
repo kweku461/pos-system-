@@ -1,9 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import "../styles/dashboard.css";
-import logo from "../assets/swiftpos-logo.jpeg";
+import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import API from "../api/axios";
+import {
+  FiBell, FiArrowUpRight, FiDollarSign, FiShoppingBag,
+  FiAlertTriangle, FiTrendingUp, FiTrendingDown, FiUsers,
+  FiPackage, FiMinus,
+} from "react-icons/fi";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -11,7 +16,7 @@ import {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [range, setRange] = useState("weekly");
@@ -50,19 +55,15 @@ function Dashboard() {
     }
   };
 
-  // ── Today's sales from summary (using weekly which includes today) ─────────
   const todayRevenue = summary ? parseFloat(summary.total_revenue) : 0;
   const totalSales   = summary ? summary.total_sales : 0;
   const totalCustomers = summary ? summary.total_customers : 0;
 
-  // ── Profit state label ─────────────────────────────────────────────────────
-  const profitState = chartData.length >= 2
+  // ── Profit trend ───────────────────────────────────────────────────────────
+  const trend = chartData.length >= 2
     ? chartData[chartData.length - 1].revenue > chartData[chartData.length - 2].revenue
-      ? "📈 Profit increasing"
-      : "📉 Profit decreasing"
-    : "Not enough data";
-
-  const handleLogout = () => { logout(); navigate('/'); };
+      ? "up" : "down"
+    : "flat";
 
   const rangeOptions = [
     { value: "weekly",  label: "This Week"  },
@@ -71,66 +72,37 @@ function Dashboard() {
   ];
 
   return (
-    <div className="dashboard-container">
-
-      {/* Sidebar */}
-      <div className="sidebar">
-        <img src={logo} className="sidebar-logo" alt="SwiftPOS" />
-        <ul className="menu">
-          <li className="active">
-            <span className="menu-icon">⊞</span> Dashboard
-          </li>
-          <li onClick={() => navigate('/products')}>
-            <span className="menu-icon">🛒</span> Products
-          </li>
-          <li onClick={() => navigate('/inventory')}>
-            <span className="menu-icon">📦</span> Inventory
-          </li>
-          <li onClick={() => navigate('/sales')}>
-            <span className="menu-icon">📊</span> Sales
-          </li>
-          <li onClick={() => navigate('/customers')}>
-            <span className="menu-icon">👥</span> Customers
-          </li>
-          <li onClick={() => navigate('/analytics')}>
-            <span className="menu-icon">📈</span> Analytics
-          </li>
-        </ul>
-        <div className="user" onClick={handleLogout} title="Click to logout">
-          <div className="user-avatar">
-            {user?.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-          <div className="user-info">
-            <p>{user?.name || "User"}</p>
-            <span>{user?.role || "Role"}</span>
-          </div>
-          <span className="logout-icon">⏻</span>
-        </div>
-      </div>
+    <div className="app-shell">
+      <Sidebar />
 
       {/* Main Content */}
       <div className="main">
 
         {/* Header */}
-        <div className="header">
+        <div className="header panel">
           <div>
-            <h2>Dashboard</h2>
-            <p>Welcome back, {user?.name?.split(" ")[0] || "there"}! 👋</p>
+            <h2 className="page-title">Dashboard</h2>
+            <p className="page-sub">Welcome back, {user?.name?.split(" ")[0] || "there"}</p>
           </div>
           <div className="header-icons">
-            {/* Low stock bell — red if alerts exist */}
             <button
               className="icon-btn"
               title={lowStock.count > 0 ? `${lowStock.count} low stock alerts` : "No alerts"}
               onClick={() => navigate('/inventory')}
               style={{ position: "relative" }}
             >
-              🔔
+              <FiBell />
               {lowStock.count > 0 && (
                 <span className="notif-badge">{lowStock.count}</span>
               )}
             </button>
-            <button className="icon-btn" onClick={() => navigate('/analytics')}>📈</button>
+            <button
+              className="icon-btn"
+              onClick={() => navigate('/analytics')}
+              title="View analytics"
+            >
+              <FiTrendingUp />
+            </button>
           </div>
         </div>
 
@@ -138,33 +110,42 @@ function Dashboard() {
         <div className="main-scroll">
 
           {loading ? (
-            <div style={{ padding: "40px", textAlign: "center", color: "#888" }}>
-              Loading dashboard...
-            </div>
+            <p className="status-msg">Loading dashboard...</p>
           ) : (
             <>
 
-              {/* Top Cards */}
+              {/* Top Stat Cards */}
               <div className="cards">
-                <div className="card blue">
-                  <p>{rangeOptions.find(r => r.value === range)?.label} Sales</p>
-                  <h3>₵{todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                <div className="stat-card panel">
+                  <span className="stat-icon blue"><FiDollarSign /></span>
+                  <div>
+                    <p className="stat-label">{rangeOptions.find(r => r.value === range)?.label} Sales</p>
+                    <h3 className="stat-value">
+                      ₵{todayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </h3>
+                  </div>
                 </div>
 
-                <div className="card outline">
-                  <p>Transactions</p>
-                  <h3>{totalSales}</h3>
+                <div className="stat-card panel">
+                  <span className="stat-icon green"><FiShoppingBag /></span>
+                  <div>
+                    <p className="stat-label">Transactions</p>
+                    <h3 className="stat-value">{totalSales}</h3>
+                  </div>
                 </div>
 
-                <div className="card red">
-                  <p>Low Stock Alerts</p>
-                  <div className="card-bottom-row">
-                    <h3>{lowStock.count}</h3>
-                    <span className="card-sub">
-                      {lowStock.items.length > 0
-                        ? lowStock.items[0].name
-                        : "All good ✓"}
-                    </span>
+                <div className="stat-card panel">
+                  <span className={`stat-icon ${lowStock.count > 0 ? "red" : "green"}`}>
+                    <FiAlertTriangle />
+                  </span>
+                  <div>
+                    <p className="stat-label">Low Stock Alerts</p>
+                    <div className="stat-bottom-row">
+                      <h3 className="stat-value">{lowStock.count}</h3>
+                      <span className="stat-sub">
+                        {lowStock.items.length > 0 ? lowStock.items[0].name : "All good"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -173,7 +154,7 @@ function Dashboard() {
               <div className="middle">
 
                 {/* Revenue Chart */}
-                <div className="chart">
+                <div className="chart panel">
                   <div className="section-header">
                     <div>
                       <h3>Total Revenue</h3>
@@ -194,27 +175,26 @@ function Dashboard() {
                         onClick={() => navigate('/analytics')}
                         title="View full analytics"
                       >
-                        ↗
+                        <FiArrowUpRight />
                       </button>
                     </div>
                   </div>
 
                   {chartData.length === 0 ? (
-                    <div className="chart-box" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: "13px" }}>
-                      No sales data for this period
-                    </div>
+                    <div className="chart-empty">No sales data for this period</div>
                   ) : (
                     <div style={{ marginTop: "12px" }}>
                       <ResponsiveContainer width="100%" height={180}>
                         <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                          <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                           <Tooltip
                             formatter={(v) => [`₵${parseFloat(v).toLocaleString()}`, "Revenue"]}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                            contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "1px solid #e2e8f0" }}
+                            cursor={{ fill: "rgba(37, 99, 235, 0.06)" }}
                           />
-                          <Bar dataKey="revenue" fill="#2f80ed" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="revenue" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={36} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -222,54 +202,68 @@ function Dashboard() {
                 </div>
 
                 {/* Business Data */}
-                <div className="business">
+                <div className="business panel">
                   <div className="section-header">
                     <h3>Business Data</h3>
                   </div>
 
-                  <div className="box blue-light">
-                    <p>Number of Customers</p>
-                    <h4>{totalCustomers}</h4>
+                  <div className="box">
+                    <span className="box-icon blue"><FiUsers /></span>
+                    <div>
+                      <p>Customers</p>
+                      <h4>{totalCustomers}</h4>
+                    </div>
                   </div>
 
-                  <div className="box orange">
-                    <p>Total Products</p>
-                    <h4>{totalProducts}</h4>
+                  <div className="box">
+                    <span className="box-icon orange"><FiPackage /></span>
+                    <div>
+                      <p>Total Products</p>
+                      <h4>{totalProducts}</h4>
+                    </div>
                   </div>
 
-                  <div className="box green">
-                    <p>Analytics State</p>
-                    <h4 style={{ fontSize: "14px" }}>{profitState}</h4>
+                  <div className="box">
+                    <span className={`box-icon ${trend === "up" ? "green" : trend === "down" ? "red" : "gray"}`}>
+                      {trend === "up" ? <FiTrendingUp /> : trend === "down" ? <FiTrendingDown /> : <FiMinus />}
+                    </span>
+                    <div>
+                      <p>Revenue Trend</p>
+                      <h4 style={{ fontSize: "14px" }}>
+                        {trend === "up" ? "Increasing" : trend === "down" ? "Decreasing" : "Not enough data"}
+                      </h4>
+                    </div>
                   </div>
                 </div>
 
               </div>
 
               {/* Bottom — Top Selling Products */}
-              <div className="bottom">
+              <div className="bottom panel">
                 <div className="section-header">
                   <h3>Top Selling Products</h3>
                   <button
                     className="icon-btn small"
                     onClick={() => navigate('/analytics')}
                     title="View full analytics"
-                    style={{ fontSize: "12px" }}
                   >
-                    View all ↗
+                    View all <FiArrowUpRight />
                   </button>
                 </div>
                 {topProducts.length === 0 ? (
-                  <p style={{ color: "#aaa", fontSize: "13px", padding: "12px 0" }}>
+                  <p className="status-msg" style={{ textAlign: "left", padding: "12px 0" }}>
                     No sales data yet.
                   </p>
                 ) : (
                   <ul>
                     {topProducts.map((p) => (
                       <li key={p.rank}>
-                        <span>{p.rank}. {p.name}</span>
-                        <span style={{ display: "flex", gap: "16px", color: "#555" }}>
-                          <span style={{ color: "#888", fontSize: "13px" }}>{p.units_sold} units</span>
-                          <span style={{ fontWeight: "600", color: "#2f80ed" }}>
+                        <span className="top-product-name">
+                          <span className="rank-chip">{p.rank}</span> {p.name}
+                        </span>
+                        <span className="top-product-meta">
+                          <span className="top-product-units">{p.units_sold} units</span>
+                          <span className="top-product-revenue">
                             ₵{parseFloat(p.revenue).toLocaleString()}
                           </span>
                         </span>
