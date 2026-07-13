@@ -235,17 +235,21 @@ const openPaystackPopup = ({ saleId, amountCedis, email, channel }) =>
 
     const onCancel = () => reject(new Error("Payment was cancelled."));
 
-    paystackInstance.newTransaction({
+    const transactionParams = {
       key: PAYSTACK_PUBLIC_KEY,
       email: email || "customer@swiftpos.com",
       amount: Math.round(amountCedis * 100),
       currency: "GHS",
-      reference: `swiftpos_${saleId}_${Date.now()}`,
+      reference: `swiftpos-${saleId}-${Date.now()}`,
       channels: channel === "momo" ? ["mobile_money"] : ["card"],
       metadata: { sale_id: saleId },
       onSuccess,
       onCancel,
-    });
+    };
+
+    console.log("Paystack transaction params:", transactionParams);
+
+    paystackInstance.newTransaction(transactionParams);
   }));
   // ── Main payment handler ────────────────────────────────────────────────────
   const handlePayment = async () => {

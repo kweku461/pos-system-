@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -18,6 +19,7 @@ function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !user?.role || item.roles.includes(user.role)
@@ -29,10 +31,16 @@ function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="brand">
-        <span className="brand-mark"><FiZap /></span>
-        <span className="brand-name">SwiftPOS</span>
+        <button
+          className="brand-mark collapse-toggle"
+          onClick={() => setCollapsed((prev) => !prev)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <FiZap />
+        </button>
+        {!collapsed && <span className="brand-name">SwiftPOS</span>}
       </div>
 
       <ul className="nav">
@@ -43,7 +51,7 @@ function Sidebar() {
             onClick={() => navigate(item.path)}
           >
             {item.icon}
-            {item.label}
+            {!collapsed && <span className="nav-label">{item.label}</span>}
           </li>
         ))}
       </ul>
@@ -53,13 +61,15 @@ function Sidebar() {
           <div className="user-avatar">
             {user?.name?.charAt(0).toUpperCase() || "U"}
           </div>
-          <div className="user-info">
-            <p>{user?.name || "User"}</p>
-            <span>{user?.role || "Role"}</span>
-          </div>
+          {!collapsed && (
+            <div className="user-info">
+              <p>{user?.name || "User"}</p>
+              <span>{user?.role || "Role"}</span>
+            </div>
+          )}
         </div>
         <button className="logout-btn" onClick={handleLogout}>
-          <FiLogOut /> Sign out
+          <FiLogOut /> {!collapsed && <span>Sign out</span>}
         </button>
       </div>
     </aside>
