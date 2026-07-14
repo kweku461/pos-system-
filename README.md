@@ -2,6 +2,8 @@
 
 A full-stack point-of-sale system for small retail businesses. Cashiers ring up sales with cash, card, mobile money, or split payments (via Paystack); managers and admins manage products, inventory, customers with loyalty points, and view sales analytics.
 
+A live version of the application is available and uses a separate database hosted on Neon, so you can try the system without running it locally.
+
 ## Tech Stack
 
 | Layer    | Technology |
@@ -17,6 +19,34 @@ A full-stack point-of-sale system for small retail businesses. Cashiers ring up 
 - **Inventory** — stock levels with low-stock alerts, restock (add) and update (set exact) flows.
 - **Customers** — CRUD plus loyalty points (earned automatically at ₵10 = 1 point, manually adjustable).
 - **Analytics** — revenue over time, sales trend, payment-method breakdown, top products, weekly/monthly/yearly ranges.
+
+## Role-Based Authentication and User Roles
+
+The system uses JWT-based authentication with role-based access control to determine what each user can see and do. When a user logs in, the backend validates their credentials and issues a token that includes their role. That token is then used by both the frontend and backend to protect pages and API routes.
+
+### How authentication works
+- A user signs in with their email and password.
+- The backend verifies the credentials and generates a JWT.
+- The token contains the user’s role, which is used to determine access permissions.
+- Protected routes require a valid token, and certain routes also require specific roles.
+
+### Actors and their interaction in the system
+
+#### Admin
+The Admin is the highest-level user in the system. They have full access to the POS platform and can manage core operations such as products, inventory, customers, sales, and analytics. The Admin is responsible for overseeing the overall system and controlling access to important features.
+
+#### Manager
+The Manager acts as the operational lead of the store. They can access most business functions, including sales, inventory, customers, and analytics, to supervise daily activities and support store operations. Managers have broad access, but they do not have the same full administrative control as the Admin.
+
+#### Cashier
+The Cashier is the front-line user who handles day-to-day sales transactions. They can process sales and interact with the sales module, but they do not have access to higher-level administrative features such as products, inventory management, customer administration, or analytics.
+
+### Access summary
+- **Admin**: full access to the system
+- **Manager**: access to operational and reporting features
+- **Cashier**: access to sales-related features only
+
+This role-based structure ensures that each actor interacts with the system according to their responsibilities, improving security, organization, and workflow efficiency.
 
 ## Project Structure
 
